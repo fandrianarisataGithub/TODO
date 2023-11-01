@@ -1,3 +1,6 @@
+<script setup>
+    import {RouterLink} from 'vue-router'
+</script>
 <template>
     <nav class="layout-header navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
@@ -8,13 +11,7 @@
             <div class="collapse navbar-collapse" id="navbarTogglerDemo02">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="">Contact</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="">Pricing</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="">Download</a>
+                        <router-link to="/" class="nav-link">Home</router-link>
                     </li>
                 </ul>
             </div>
