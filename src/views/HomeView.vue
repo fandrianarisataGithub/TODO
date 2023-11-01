@@ -5,15 +5,23 @@
     import { useVuelidate } from '@vuelidate/core'
     import { helpers, required } from '@vuelidate/validators'
     const closeableModalAdd = ref(false);
+    const closeableModalEdit = ref(false);
     const confirmDeleteTaskModal = ref(false);
     const indexToDelete = ref(null);
     const taskStore = useTaskStore();
     const tasks = computed(() => taskStore.tasks);
     const formAdd = ref(null);
+    const formEdit = ref(null)
     const task = ref({
         title : '',
         content : '',
         isCompleted : false
+    })
+    const taskEdit = ref({
+        title : '',
+        content : '',
+        isCompleted : false,
+        index : null
     })
     
     const rules = computed(() => {
@@ -21,13 +29,11 @@
             title: { 
                 required : helpers.withMessage('This field cannot be empty', required)
             }, // Matches task.title
-            content: { 
-                required : helpers.withMessage('This field cannot be empty', required)
-             }, // Matches task.content
         }
     })
     
     const v$ = useVuelidate(rules, task);
+    const vTaskEdit$ = useVuelidate(rules, taskEdit);
 
     // add task
     async function addTaskFromHome(){
@@ -66,6 +72,33 @@
         tasks.value.splice(index, 1, newItem)
         taskStore.editTask(index, tasks.value[index])
     }
+
+    // edit 
+    //open modal for the index array
+    function setCloseableModalEditToTrue(index){
+        closeableModalEdit.value = true;
+        taskEdit.value = tasks.value[index];
+        taskEdit.value.index = index;
+    }
+    function editTaskFromHome(){
+        vTaskEdit$.value.$validate();
+        if(!vTaskEdit$.value.$error){
+            let index = taskEdit.value.index;
+            let editedItem = {
+                title : taskEdit.value.title,
+                content : taskEdit.value.content,
+                isCompleted : taskEdit.value.isCompleted
+            };
+            tasks.value.splice(index, 1, editedItem)
+            taskStore.editTask(index, tasks.value[index])
+            closeableModalEdit.value = false;
+        }
+    }
+    // count no Completed task 
+    const noCompletedTasks = computed (() => {
+        let listOfNocompletedTasks = tasks.value.filter((task) => task.isCompleted === false);
+        return listOfNocompletedTasks.length;
+    })
     
    
 </script>
@@ -93,20 +126,56 @@
             </div>
         </div>
         <div 
-            :class="{ error: v$.content.$errors.length }"
             class="form-group"
         >
             <label for="add-content">Content*:</label>
             <quill-editor contentType="html" v-model:content="task.content" theme="snow"></quill-editor>
-            <div class="input-errors" v-for="error of v$.content.$errors" :key="error.$uid">
-                <div class="error-msg">{{ error.$message }}</div>
-            </div>
         </div>
         <div class="form-group">
             <button @click.prevent="addTaskFromHome" class="btn btn-primary d-block ms-auto my-2">Add</button>
         </div>
       </form>
     </Modal>
+    <!-- modal edit -->
+    <Modal 
+        v-model="closeableModalEdit" 
+        closeable 
+        header="Edit this task"
+    >
+      <form ref="formEdit" action="">
+        <div 
+            :class="{ error: vTaskEdit$.title.$errors.length }"
+            class="form-group"
+        >
+            <label for="add-title">Title*:</label>
+            <input v-model="taskEdit.title" class="form-control" id="add-title" type="text" required>
+            <div class="input-errors" v-for="error of vTaskEdit$.title.$errors" :key="error.$uid">
+                <div class="error-msg">{{ error.$message }}</div>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="status">Status*:</label>
+            <select 
+                v-model="taskEdit.isCompleted" 
+                name="" id=""
+                class="form-control"
+            >
+                <option value="false">Unfinished</option>
+                <option value="true">Completed</option>
+            </select>
+        </div>
+        <div 
+            class="form-group"
+        >
+            <label for="add-content">Content*:</label>
+            <quill-editor contentType="html" v-model:content="taskEdit.content" theme="snow"></quill-editor>
+        </div>
+        <div class="form-group">
+            <button @click.prevent="editTaskFromHome" class="btn btn-primary d-block ms-auto my-2">Save change</button>
+        </div>
+      </form>
+    </Modal>
+    <!-- end modal edit -->
     <Modal 
         v-model="confirmDeleteTaskModal" 
         closeable 
@@ -119,6 +188,7 @@
     </Modal>
     <div class="row my-3">
         <h2 class="my-3">List of tasks</h2>
+        <h4>Number of the not completed task{{ noCompletedTasks > 1 ? 's' : '' }} : {{ noCompletedTasks }}</h4>
         <div class="array-content my-3">
             <table class="table table-hover">
                 <thead>
@@ -135,9 +205,12 @@
                         <th scope="row">{{ index + 1 }}</th>
                         <td>{{ task.title }}</td>
                         <td v-html="task.content"></td>
-                        <th>{{ task.isCompleted ? 'Completed' : 'Unfinished' }}</th>
+                        <th>{{ task.isCompleted ? 'Completed' : 'No completed' }}</th>
                         <td class="td-actions">
-                            <button class="btn btn-secondary btn-xs">
+                            <button 
+                                @click = "setCloseableModalEditToTrue(index)"
+                                class="btn btn-secondary btn-xs"
+                            >
                                 <i class="bi-pencil-square"></i>
                             </button>
                             <button
@@ -147,7 +220,7 @@
                                 <i class="bi-trash"></i>
                             </button>
                             <button @click="changeStatus(index)" class="completed btn btn-xs btn-success">
-                                {{task.isCompleted ? 'Set to unfinished' : 'Set to completed'}}
+                                {{task.isCompleted ? 'Set to no completed' : 'Set to completed'}}
                             </button>
                         </td>
                     </tr>
