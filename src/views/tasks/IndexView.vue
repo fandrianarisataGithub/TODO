@@ -1,11 +1,19 @@
 <script setup>
-    import {computed, ref} from 'vue'
-    import Modal from '@/components/elements/ModalElement.vue'
-    import {useTaskStore} from '@/stores/taskStore'
-    import { useVuelidate } from '@vuelidate/core'
-    import { helpers, required } from '@vuelidate/validators'
-    import TableTasks from '@/components/blocs/TableTasks.vue'
-    const closeableModalAdd = ref(false);
+import {
+  computed,
+  ref,
+} from 'vue';
+
+import TableTasks from '@/components/blocs/TableTasks.vue';
+import Modal from '@/components/elements/ModalElement.vue';
+import { useTaskStore } from '@/stores/taskStore';
+import { useVuelidate } from '@vuelidate/core';
+import {
+  helpers,
+  required,
+} from '@vuelidate/validators';
+
+const closeableModalAdd = ref(false);
     const closeableModalEdit = ref(false);
     const confirmDeleteTaskModal = ref(false);
     const indexToDelete = ref(null);
@@ -13,6 +21,7 @@
     const tasks = computed(() => taskStore.tasks);
     const formAdd = ref(null);
     const formEdit = ref(null)
+    const quillAdd = ref(null)
     const task = ref({
         id : 1,
         title : '',
@@ -40,7 +49,6 @@
 
     // add task
     function addTask(){
-        //console.log(task.value.content);
         v$.value.$validate();
         if(!v$.value.$error){
             // create id for the task
@@ -53,7 +61,7 @@
                 isCompleted : false
             }
             taskStore.addTask(task.value)
-            closeableModalAdd.value = false;
+            //closeableModalAdd.value = false;
             //console.log(tasks.value)
             //set it to empty
             task.value = {
@@ -62,6 +70,7 @@
                 content : '',
                 isCompleted : false
             }
+            quillAdd.value.setHTML('')
         }
     }
     //close modal delete confirmation
@@ -120,21 +129,10 @@
 <template>
   <main class="page-tasks">
     <h1 class="my-3">List of tasks</h1>
-    <button @click="closeableModalAdd = true" type="button" class="btn btn-success mt-2">
-      Open Closeable Modal
-    </button>
-    <TableTasks :tasks="tasks"
-        @changeStatus="changeStatus"
-        @setCloseableModalEditToTrue="setCloseableModalEditToTrue"
-        @removeTask="removeTask"
-    />
-    <!-- modal add task -->
-    <Modal 
-        v-model="closeableModalAdd" 
-        closeable 
-        header="Add new task"
-    >
-      <form ref="formAdd" action="">
+    <!--button @click="closeableModalAdd = true" type="button" class="btn btn-success mt-2">
+      Add new task
+    </button-->
+    <form class="bloc-form" ref="formAdd" action="">
         <div 
             :class="{ error: v$.title.$errors.length }"
             class="form-group"
@@ -149,14 +147,17 @@
             class="form-group"
         >
             <label for="add-content">Content*:</label>
-            <quill-editor contentType="html" v-model:content="task.content" theme="snow"></quill-editor>
+            <quill-editor ref="quillAdd" contentType="html" v-model:content="task.content" theme="snow"></quill-editor>
         </div>
         <div class="form-group">
             <button @click.prevent="addTask" class="btn btn-primary d-block ms-auto my-2">Add</button>
         </div>
       </form>
-    </Modal>
-    <!-- /modal add task -->
+    <TableTasks :tasks="tasks"
+        @changeStatus="changeStatus"
+        @setCloseableModalEditToTrue="setCloseableModalEditToTrue"
+        @removeTask="removeTask"
+    />
 
     <!-- modal edit -->
     <Modal 
